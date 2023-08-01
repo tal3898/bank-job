@@ -1,4 +1,4 @@
-import { Collection } from "mongodb";
+import { Collection, Document, ObjectId, WithId } from "mongodb";
 import { Connection } from "./connection";
 import { Transaction } from "../models/transaction";
 
@@ -12,14 +12,21 @@ export class TransactionCollection {
         this.collection = dbconnection.dbConnector()?.collection(COLLECTION_NAME);
     }
 
+  async getAllTransactions() : Promise<WithId<Transaction>[]>{
+    const transactions = await this.collection?.find();
+    const result = await transactions?.toArray();
 
-    
-  async insertTransaction(newTransaction: Transaction) {
-    if (!this.collection) {
-        throw new Error('Database and/or collection not initialized');
+    if (result === undefined) {
+      throw new Error('Try to select transactions before initiate the connection to db');
     }
 
-    await this.collection.insertOne(newTransaction);
+    return result as WithId<Transaction>[];
+  }
+
+  async update(documentId: ObjectId, newTransactionData: Transaction) {
+    const result = await this.collection?.replaceOne({
+      '_id': documentId,
+    }, newTransactionData);
   }
 
 }

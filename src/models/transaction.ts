@@ -1,5 +1,6 @@
 export interface Transaction {
-    id: string;
+    sourceBank: string;
+    destBank: string;
     amount: number;
     daysToDebit: number;
     daysPaid: number;
