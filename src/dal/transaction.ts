@@ -12,8 +12,15 @@ export class TransactionCollection {
         this.collection = dbconnection.dbConnector()?.collection(COLLECTION_NAME);
     }
 
-  async getAllTransactions() : Promise<WithId<Transaction>[]>{
-    const transactions = await this.collection?.find();
+  async getAllTransactionsForToday() : Promise<WithId<Transaction>[]>{
+    const startOfToday = new Date();
+    startOfToday.setHours(0, 0, 0, 0);
+    const endOfToday = new Date();
+    endOfToday.setHours(23, 59, 59, 999);
+
+    const query = { dateField: { $gte: startOfToday, $lte: endOfToday } };
+    
+    const transactions = await this.collection?.find(query);
     const result = await transactions?.toArray();
 
     if (result === undefined) {
@@ -24,9 +31,15 @@ export class TransactionCollection {
   }
 
   async update(documentId: ObjectId, newTransactionData: Transaction) {
-    const result = await this.collection?.replaceOne({
+    await this.collection?.replaceOne({
       '_id': documentId,
     }, newTransactionData);
   }
+
+  async delete(documentId: ObjectId) {
+    await this.collection?.deleteOne({_id: documentId})
+  }
+
+
 
 }

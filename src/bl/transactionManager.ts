@@ -6,7 +6,7 @@ import { Status } from "../models/status";
 import { Report } from "../models/report";
 import { NewTransaction } from "../models/newTransaction";
 
-const DEBIT_DAYS = 12;
+const DEBIT_DAYS_INTERVAL = 7;
 
 export class TransactionManager {
     private processor: Processor;
@@ -16,7 +16,7 @@ export class TransactionManager {
     }
 
     async performDayliTransactions() {
-        const transactions = await this.transactionCollection.getAllTransactions();
+        const transactions = await this.transactionCollection.getAllTransactionsForToday();
 
         const today = new Date();
         today.setHours(0, 0, 0, 0);
@@ -34,13 +34,18 @@ export class TransactionManager {
             });
         }
 
+        const transactionsReports = this.processor.download_report();
+        this.handleTransactionReport(newTransactions, transactionsReports);
+    }
+
+    private handleTransactionReport(newTransactions: NewTransaction[], transactionsReports: Report[]) {
         const nextDateToPay = new Date();
-        nextDateToPay.setDate(nextDateToPay.getDate() + 1);
+        nextDateToPay.setDate(nextDateToPay.getDate() + DEBIT_DAYS_INTERVAL);
         nextDateToPay.setHours(0, 0, 0, 0);
         
-        const transactionReports = this.processor.download_report();
+       
         for(const currNewTransaction of newTransactions) {
-            const transactionReport = transactionReports.find((currReport) => 
+            const transactionReport = transactionsReports.find((currReport) => 
                 currReport.transactionId === currNewTransaction.newTransactionId);
 
             if (transactionReport === undefined) {
@@ -52,46 +57,16 @@ export class TransactionManager {
                 }
         
                 if (daysPaid === currNewTransaction.originalTransaction.daysToDebit) {
-                    // finish
+                    this.transactionCollection.delete(currNewTransaction.originalTransaction._id);
                 } else {
                     this.transactionCollection.update(currNewTransaction.originalTransaction._id, 
                         {
-                            amount: currNewTransaction.originalTransaction.amount,
-                            sourceBank: currNewTransaction.originalTransaction.sourceBank,
-                            destBank: currNewTransaction.originalTransaction.destBank,
+                            ...currNewTransaction.originalTransaction,
                             daysPaid: daysPaid,
-                            daysToDebit: currNewTransaction.originalTransaction.daysToDebit,
                             nextDateToPay: nextDateToPay
-                        })
+                        }); 
                 }
             }
         }
-        
-        // if (currTransactionReport === undefined) {
-        //     throw new Error('Transaction ' + transactionId + ' was not processed.')
-        // }
-
-        // this.handleTransaction(transactionId, amount, currTransactionReport);
-    }
-
-    private handleTransaction(transactionId:string, amount:number, transactionReport: Report) {
-        let daysPaid = 1;
-        if (transactionReport.status === Status.FAILED) {
-            daysPaid = 0;
-        }
-
-        const nextDateToPay = new Date();
-        nextDateToPay.setDate(nextDateToPay.getDate() + 1);
-        nextDateToPay.setHours(0, 0, 0, 0);
-
-        const newTransactionToSave: Transaction = {
-            id: transactionId,
-            amount,
-            daysPaid: daysPaid,
-            daysToDebit: DEBIT_DAYS,
-            nextDateToPay: nextDateToPay
-        }
-
-        this.transactionCollection.insertTransaction(newTransactionToSave);
     }
 }
