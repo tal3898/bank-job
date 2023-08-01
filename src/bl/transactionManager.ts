@@ -17,10 +17,6 @@ export class TransactionManager {
 
     async performDayliTransactions() {
         const transactions = await this.transactionCollection.getAllTransactionsForToday();
-
-        const today = new Date();
-        today.setHours(0, 0, 0, 0);
-
         const newTransactions: NewTransaction[] = [];
 
         for(const currTransaction of transactions) {
@@ -42,7 +38,6 @@ export class TransactionManager {
         const nextDateToPay = new Date();
         nextDateToPay.setDate(nextDateToPay.getDate() + DEBIT_DAYS_INTERVAL);
         nextDateToPay.setHours(0, 0, 0, 0);
-        
        
         for(const currNewTransaction of newTransactions) {
             const transactionReport = transactionsReports.find((currReport) => 
