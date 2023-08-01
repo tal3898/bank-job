@@ -19,6 +19,8 @@ export class TransactionManager {
         const transactions = await this.transactionCollection.getAllTransactionsForToday();
         const newTransactions: NewTransaction[] = [];
 
+        console.log({ message: 'Performing the dayli transactions', transactions});
+
         for(const currTransaction of transactions) {
             const transactionId = this.processor.perform_transaction(currTransaction.sourceBank, 
                 currTransaction.destBank, 
@@ -31,10 +33,10 @@ export class TransactionManager {
         }
 
         const transactionsReports = this.processor.download_report();
-        this.handleTransactionReport(newTransactions, transactionsReports);
+        this.handleTransactionsReport(newTransactions, transactionsReports);
     }
 
-    private handleTransactionReport(newTransactions: NewTransaction[], transactionsReports: Report[]) {
+    private async handleTransactionsReport(newTransactions: NewTransaction[], transactionsReports: Report[]) {
         const nextDateToPay = new Date();
         nextDateToPay.setDate(nextDateToPay.getDate() + DEBIT_DAYS_INTERVAL);
         nextDateToPay.setHours(0, 0, 0, 0);
@@ -44,24 +46,28 @@ export class TransactionManager {
                 currReport.transactionId === currNewTransaction.newTransactionId);
 
             if (transactionReport === undefined) {
-                console.error('Transaction ' + currNewTransaction.newTransactionId + ' was not processed.')
+                console.error({message: 'Transaction ' + currNewTransaction.newTransactionId + ' was not processed.'})
             } else {
-                let daysPaid = currNewTransaction.originalTransaction.daysPaid++;
-                if (transactionReport.status === Status.FAILED) {
-                    daysPaid--;
-                }
-        
-                if (daysPaid === currNewTransaction.originalTransaction.daysToDebit) {
-                    this.transactionCollection.delete(currNewTransaction.originalTransaction._id);
-                } else {
-                    this.transactionCollection.update(currNewTransaction.originalTransaction._id, 
-                        {
-                            ...currNewTransaction.originalTransaction,
-                            daysPaid: daysPaid,
-                            nextDateToPay: nextDateToPay
-                        }); 
-                }
+               await this.updateTransaction(currNewTransaction, transactionReport, nextDateToPay);
             }
+        }
+    }
+
+    private async updateTransaction(newTransaction: NewTransaction,transactionReport: Report, nextDateToPay: Date,) {
+        let daysPaid = newTransaction.originalTransaction.daysPaid++;
+        if (transactionReport.status === Status.FAILED) {
+            daysPaid--;
+        }
+
+        if (daysPaid === newTransaction.originalTransaction.daysToDebit) {
+            await this.transactionCollection.delete(newTransaction.originalTransaction._id);
+        } else {
+            await this.transactionCollection.update(newTransaction.originalTransaction._id, 
+                {
+                    ...newTransaction.originalTransaction,
+                    daysPaid: daysPaid,
+                    nextDateToPay: nextDateToPay
+                });     
         }
     }
 }

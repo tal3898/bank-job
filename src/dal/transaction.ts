@@ -13,12 +13,10 @@ export class TransactionCollection {
     }
 
   async getAllTransactionsForToday() : Promise<WithId<Transaction>[]>{
-    const startOfToday = new Date();
-    startOfToday.setHours(0, 0, 0, 0);
     const endOfToday = new Date();
     endOfToday.setHours(23, 59, 59, 999);
 
-    const query = { dateField: { $gte: startOfToday, $lte: endOfToday } };
+    const query = { nextDateToPay: {  $lte: endOfToday } };
     
     const transactions = await this.collection?.find(query);
     const result = await transactions?.toArray();

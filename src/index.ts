@@ -8,10 +8,10 @@ async function main() {
     await dbConnection.connect();
     const transactionCollection = new TransactionCollection(dbConnection);
     const transactionManager = new TransactionManager(transactionCollection)
-    transactionManager.performDayliTransactions();
-
+    
     cron.schedule('*/5 * * * * *', () => {
-        console.log('Running this task every 10 seconds');
+        console.log('running')
+        transactionManager.performDayliTransactions();
     });
 }
 
