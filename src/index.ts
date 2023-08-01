@@ -11,7 +11,7 @@ async function main() {
     
     // run cron job every day at midnight
     cron.schedule('0 0 * * *', () => {
-        console.log('running')
+        console.log({message: 'running', date: new Date()})
         transactionManager.performDayliTransactions();
     });
 }
