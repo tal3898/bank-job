@@ -19,14 +19,19 @@ export class TransactionManager {
         console.log({ message: 'Performing the dayli transactions', transactions});
 
         for(const currTransaction of transactions) {
-            const transactionId = this.processor.perform_transaction(currTransaction.sourceBank, 
-                currTransaction.destBank, 
-                currTransaction.amount/currTransaction.daysToDebit,
-                'debit');
-            newTransactions.push({
-                newTransactionId: transactionId,
-                originalTransaction: currTransaction
-            });
+            try {
+                const transactionId = this.processor.perform_transaction(currTransaction.sourceBank, 
+                    currTransaction.destBank, 
+                    currTransaction.amount/currTransaction.daysToDebit,
+                    'debit');
+
+                newTransactions.push({
+                    newTransactionId: transactionId,
+                    originalTransaction: currTransaction
+                });
+            } catch(error) {
+                console.error({message: 'could not perform transaction', transaction: currTransaction})
+            }
         }
 
         const transactionsReports = this.processor.download_report();
@@ -51,20 +56,27 @@ export class TransactionManager {
     }
 
     private async updateTransaction(newTransaction: NewTransaction,transactionReport: Report, nextDateToPay: Date,) {
-        let daysPaid = newTransaction.originalTransaction.daysPaid++;
-        if (transactionReport.status === Status.FAILED) {
-            daysPaid--;
-        }
-
-        if (daysPaid === newTransaction.originalTransaction.daysToDebit) {
-            await this.transactionCollection.delete(newTransaction.originalTransaction._id);
-        } else {
-            await this.transactionCollection.update(newTransaction.originalTransaction._id, 
-                {
-                    ...newTransaction.originalTransaction,
-                    daysPaid: daysPaid,
-                    nextDateToPay: nextDateToPay
-                });     
+        try {
+            let daysPaid = newTransaction.originalTransaction.daysPaid++;
+            if (transactionReport.status === Status.FAILED) {
+                daysPaid--;
+            }
+    
+            if (daysPaid === newTransaction.originalTransaction.daysToDebit) {
+                await this.transactionCollection.delete(newTransaction.originalTransaction._id);
+            } else {
+                await this.transactionCollection.update(newTransaction.originalTransaction._id, 
+                    {
+                        ...newTransaction.originalTransaction,
+                        daysPaid: daysPaid,
+                        nextDateToPay: nextDateToPay
+                    });     
+            }            
+        } catch (error) {
+            console.error({message: 'transaction was commited but was not saved in db. meaning it wont debit the next time.', 
+                transaction: newTransaction,
+                transactionReport,
+                error})
         }
     }
 }

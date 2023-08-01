@@ -9,7 +9,8 @@ async function main() {
     const transactionCollection = new TransactionCollection(dbConnection);
     const transactionManager = new TransactionManager(transactionCollection)
     
-    cron.schedule('*/5 * * * * *', () => {
+    // run cron job every day at midnight
+    cron.schedule('0 0 * * *', () => {
         console.log('running')
         transactionManager.performDayliTransactions();
     });
