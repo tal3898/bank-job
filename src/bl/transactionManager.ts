@@ -1,12 +1,9 @@
-import { abort } from "process";
 import { TransactionCollection } from "../dal/transaction";
-import { Processor } from "./processor";
-import { Transaction } from "../models/transaction";
-import { Status } from "../models/status";
-import { Report } from "../models/report";
 import { NewTransaction } from "../models/newTransaction";
-
-const DEBIT_DAYS_INTERVAL = 7;
+import { Report } from "../models/report";
+import { Status } from "../models/status";
+import { Processor } from "./processor";
+import config from '../config';
 
 export class TransactionManager {
     private processor: Processor;
@@ -38,7 +35,7 @@ export class TransactionManager {
 
     private async handleTransactionsReport(newTransactions: NewTransaction[], transactionsReports: Report[]) {
         const nextDateToPay = new Date();
-        nextDateToPay.setDate(nextDateToPay.getDate() + DEBIT_DAYS_INTERVAL);
+        nextDateToPay.setDate(nextDateToPay.getDate() + config.debitDaysInterval);
         nextDateToPay.setHours(0, 0, 0, 0);
        
         for(const currNewTransaction of newTransactions) {

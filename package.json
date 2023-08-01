@@ -19,6 +19,7 @@
   },
   "dependencies": {
     "cron-job": "^1.0.3",
+    "dotenv": "^16.3.1",
     "mongodb": "^5.7.0",
     "node-cron": "^3.0.2"
   }

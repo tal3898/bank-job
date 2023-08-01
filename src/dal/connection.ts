@@ -1,17 +1,15 @@
 import { Db, MongoClient } from 'mongodb';
+import config from '../config';
 
 export class Connection {
-  // Connection URL
    private url: string;
-  
-  // Database Name
    private dbName: string;
    private client: MongoClient
    private db: Db | undefined;
 
    constructor() {
-    this.url = 'mongodb://localhost:27017';
-    this.dbName = 'bank';
+    this.url = config.dbUrl;
+    this.dbName = config.dbName;
     this.client = new MongoClient(this.url);
    }
 
